@@ -1,6 +1,8 @@
 package com.example.yerassyl.controller;
 
+import com.example.yerassyl.dto.BookDto;
 import com.example.yerassyl.entity.Book;
+import com.example.yerassyl.mapper.BookMapper;
 import com.example.yerassyl.service.BookService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,43 +17,54 @@ import java.util.List;
 public class BookController {
 
     private final BookService bookService;
+    private final BookMapper bookMapper;
 
     @GetMapping
-    public ResponseEntity<List<Book>> getAllBooks() {
-        List<Book> books = bookService.findAll();
+    public ResponseEntity<List<BookDto>> getAllBooks() {
+        List<BookDto> books = bookService.findAll()
+                .stream()
+                .map(bookMapper::toDto)
+                .toList();
         return ResponseEntity.ok(books);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Book> getBookById(@PathVariable Long id) {
+    public ResponseEntity<BookDto> getBookById(@PathVariable Long id) {
         return bookService.findById(id)
+                .map(bookMapper::toDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Book>> searchByTitle(@RequestParam String title) {
-        List<Book> books = bookService.searchByTitle(title);
+    public ResponseEntity<List<BookDto>> searchByTitle(@RequestParam String title) {
+        List<BookDto> books = bookService.searchByTitle(title)
+                .stream()
+                .map(bookMapper::toDto)
+                .toList();
         return ResponseEntity.ok(books);
     }
 
     @GetMapping("/isbn/{isbn}")
-    public ResponseEntity<Book> getBookByIsbn(@PathVariable String isbn) {
+    public ResponseEntity<BookDto> getBookByIsbn(@PathVariable String isbn) {
         return bookService.findByIsbn(isbn)
+                .map(bookMapper::toDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Book> createBook(@RequestBody Book book) {
-        Book savedBook = bookService.save(book);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedBook);
+    public ResponseEntity<BookDto> createBook(@RequestBody BookDto bookDto) {
+        Book savedBook = bookService.save(bookMapper.toEntity(bookDto));
+        BookDto savedDto = bookMapper.toDto(savedBook);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody Book book) {
-        Book updatedBook = bookService.update(id, book);
-        return ResponseEntity.ok(updatedBook);
+    public ResponseEntity<BookDto> updateBook(@PathVariable Long id, @RequestBody BookDto bookDto) {
+        Book updatedBook = bookService.update(id, bookMapper.toEntity(bookDto));
+        BookDto updatedDto = bookMapper.toDto(updatedBook);
+        return ResponseEntity.ok(updatedDto);
     }
 
     @DeleteMapping("/{id}")

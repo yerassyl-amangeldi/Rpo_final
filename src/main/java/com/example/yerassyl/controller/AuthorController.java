@@ -1,6 +1,8 @@
 package com.example.yerassyl.controller;
 
+import com.example.yerassyl.dto.AuthorDto;
 import com.example.yerassyl.entity.Author;
+import com.example.yerassyl.mapper.AuthorMapper;
 import com.example.yerassyl.service.AuthorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,36 +17,46 @@ import java.util.List;
 public class AuthorController {
 
     private final AuthorService authorService;
+    private final AuthorMapper authorMapper;
 
     @GetMapping
-    public ResponseEntity<List<Author>> getAllAuthors() {
-        List<Author> authors = authorService.findAll();
+    public ResponseEntity<List<AuthorDto>> getAllAuthors() {
+        List<AuthorDto> authors = authorService.findAll()
+                .stream()
+                .map(authorMapper::toDto)
+                .toList();
         return ResponseEntity.ok(authors);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Author> getAuthorById(@PathVariable Long id) {
+    public ResponseEntity<AuthorDto> getAuthorById(@PathVariable Long id) {
         return authorService.findById(id)
+                .map(authorMapper::toDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Author>> searchByLastName(@RequestParam String lastName) {
-        List<Author> authors = authorService.findByLastName(lastName);
+    public ResponseEntity<List<AuthorDto>> searchByLastName(@RequestParam String lastName) {
+        List<AuthorDto> authors = authorService.findByLastName(lastName)
+                .stream()
+                .map(authorMapper::toDto)
+                .toList();
         return ResponseEntity.ok(authors);
     }
 
     @PostMapping
-    public ResponseEntity<Author> createAuthor(@RequestBody Author author) {
-        Author savedAuthor = authorService.save(author);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedAuthor);
+    public ResponseEntity<AuthorDto> createAuthor(@RequestBody AuthorDto authorDto) {
+        Author savedAuthor = authorService.save(authorMapper.toEntity(authorDto));
+        AuthorDto savedDto = authorMapper.toDto(savedAuthor);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Author> updateAuthor(@PathVariable Long id, @RequestBody Author author) {
-        Author updatedAuthor = authorService.update(id, author);
-        return ResponseEntity.ok(updatedAuthor);
+    public ResponseEntity<AuthorDto> updateAuthor(@PathVariable Long id, @RequestBody AuthorDto authorDto) {
+        Author updatedAuthor = authorService.update(id, authorMapper.toEntity(authorDto));
+        AuthorDto updatedDto = authorMapper.toDto(updatedAuthor);
+        return ResponseEntity.ok(updatedDto);
     }
 
     @DeleteMapping("/{id}")
